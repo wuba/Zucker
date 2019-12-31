@@ -1,0 +1,5 @@
+# zucker.py changelog
+
+##  2019-12-31  0.1
+
+* First public version.
