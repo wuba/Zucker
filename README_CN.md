@@ -21,10 +21,15 @@
 ```
 python zucker.py XXX(Android工程名)
 ```
+![配置初始化](./imgs/s1.png)
 
 脚本会自动执行，获取项目中的依赖关系并输出一级节点，可以选择目标节点进行AAR大小计算。
 
+![AAR列表](./imgs/s2.png)
+
 最后经过打包后，AAR大小就会显示在终端上。
+
+![AAR测量结果](./imgs/s4.png)
 
 >建议先在本项目的`simple工程`进行测试，具体流程见工程[README](Simple/README.md)
 
@@ -51,6 +56,3 @@ python zucker.py XXX(Android工程名)
  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  License for the specific language governing permissions and limitations
  under the License.
-
-
-
