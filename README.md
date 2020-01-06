@@ -33,7 +33,7 @@ Finally, after packaging, the AAR size is displayed on the terminal.
 > It is recommended to test the project's 'sample project' first, as detailed in the project [README](Sample/README.md)
 
 ## Q&A
-- todo
+- a dependency on local library module (implementation project(':xxx'))  is not support.
 
 ## Contribute
 

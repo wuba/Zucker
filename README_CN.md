@@ -35,7 +35,7 @@ python zucker.py XXX(Android工程名)
 
 
 ## 常见问题处理
- -  todo
+ -  暂不支持工程依赖 `implementation project(':xxx')` 
 
 ## 贡献代码
 详见 [CONTRIBUTING](CONTRIBUTING.rst)
