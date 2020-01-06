@@ -1,5 +1,5 @@
 # Zucker:A easier accurater automate way to calculate aar real size in the apk 
----
+
 
 [中文文档](README_CN.md)
 
@@ -7,7 +7,7 @@
 
 
 ## Requirements
----
+
 - Python 3.7+
 - Android Dev
 - Gradle 2.0+

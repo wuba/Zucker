@@ -116,7 +116,8 @@ class Dependency:
     # 移除support包和Android原生依赖包
     exportArr = ["com.android.support", "android.arch.lifecycle", "com.google.android",
                  "com.squareup.leakcanary:leakcanary-android", "android.arch.core",
-                 "org.jetbrains.kotlin:kotlin-stdlib-common", "org.jetbrains:annotations", "project :zucker"]
+                 "org.jetbrains.kotlin:kotlin-stdlib-common", "org.jetbrains:annotations",
+                 "androidx.", "project :"]
 
     def __init__(self, outputProjectPath, appdir):
         self.file_name = "dependency_" + appdir + ".txt"
