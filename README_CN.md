@@ -13,7 +13,8 @@
 第一次使用Zucker进行AAR大小计算时建议先在命令行中编译一次。
 
 编译时建议使用`gradlew`命令，以保证采用了项目的`gradle`配置
-执行如下命令：
+执行如下命令（首次运行时间较长，请耐心等待...）：
+
 ```
 ./gradlew build
 ```
@@ -36,6 +37,9 @@ python3 xxx/zucker.py xxx/targetProjectName(Android工程名)
 
 ## 常见问题处理
  -  暂不支持工程依赖类型的测量 `implementation project(':xxx')` 
+ -  在build过程中发生报错：Could not get resource 'https://jcenter.bintray.com/com/google/guava/guava/27.0.1-jre/guava-27.0.1-jre.jar'
+ 
+ 解决办法：使用阿里云镜像，重新进行下载；修改build.gradle中的buildscript和allprojects的jcenter，添加url 'https://maven.aliyun.com/repository/jcenter'即可。
 
 ## 贡献代码
 详见 [CONTRIBUTING](CONTRIBUTING.rst)
