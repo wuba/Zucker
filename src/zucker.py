@@ -517,7 +517,7 @@ class MockCache:
             file_zip.extract(file, unzipFile)
         file_zip.close()
 
-        self.copyMockFile(unzipFile, self.targetMainSrcPath)
+        self._copyMockFile(unzipFile, self.targetMainSrcPath)
         # 基础Mock
         for root, dirs, files in os.walk(os.path.dirname(self.targetMainSrcPath + "/res"), topdown=False):
             for name in files:
@@ -581,11 +581,11 @@ class MockCache:
                     os.remove(os.path.join(root, name))
 
         # 计算zucker库里面res的文件大小
-        self.zuckerResSize = self.get_dirsize(os.path.dirname(self.targetMainSrcPath + "/res"))
+        self.zuckerResSize = self._get_dirsize(os.path.dirname(self.targetMainSrcPath + "/res"))
         # 压缩Mock的File
-        self.zipMockFile(unzipFile)
+        self._zipMockFile(unzipFile)
 
-    def get_dirsize(self, path):
+    def _get_dirsize(self, path):
         # 计算指定的路径下的所有文件的大小
         if os.path.isdir(path):
             file_size, dir_list = 0, [path]
@@ -604,7 +604,7 @@ class MockCache:
         else:
             print('找不到%s文件' % path)
 
-    def copytree(self, src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2):
+    def _copytree(self, src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2):
         names = os.listdir(src)
         if ignore is not None:
             ignored_names = ignore(src, names)
@@ -633,12 +633,12 @@ class MockCache:
                             continue
                         # otherwise let the copy occurs. copy2 will raise an error
                         if os.path.isdir(srcname):
-                            self.copytree(srcname, dstname, symlinks, ignore,
-                                          copy_function)
+                            self._copytree(srcname, dstname, symlinks, ignore,
+                                           copy_function)
                         else:
                             copy_function(srcname, dstname)
                 elif os.path.isdir(srcname):
-                    self.copytree(srcname, dstname, symlinks, ignore, copy_function)
+                    self._copytree(srcname, dstname, symlinks, ignore, copy_function)
                 else:
                     # Will raise a SpecialFileError for unsupported file types
                     copy_function(srcname, dstname)
@@ -658,14 +658,14 @@ class MockCache:
             raise shutil.Error(errors)
         return dst
 
-    def copyMockFile(self, originPath, targetMainSrcPath):
+    def _copyMockFile(self, originPath, targetMainSrcPath):
         originPath = originPath + "/res"
         if os.path.exists(originPath):
-            self.copytree(originPath, targetMainSrcPath + "/res")
+            self._copytree(originPath, targetMainSrcPath + "/res")
         elif not os.path.exists(targetMainSrcPath + "/res"):
             os.makedirs(targetMainSrcPath + "/res")
 
-    def zipMockFile(self, start_dir):
+    def _zipMockFile(self, start_dir):
         start_dir = start_dir
         file_news = start_dir + '.aar'
 
