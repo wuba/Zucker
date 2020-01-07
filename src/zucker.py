@@ -235,8 +235,8 @@ class Dependency:
         aars = self.__getArrayNode(array)
         result = []
         for aar in aars:
-            # if self.__checkAARInExport(aar.value):
-            #     continue
+            if self.__checkAARInExport(aar.value):
+                continue
             result.append(aar.value)
         return result
 
@@ -758,6 +758,10 @@ if __name__ == '__main__':
     currentPath = os.getcwd()
     # 输出目录
     outputPath = os.path.join(currentPath, "output")
+    # 资源大小
+    zuckerResSize = ""
+    # 是否找到缓存
+    isCacheExist = False
 
     # 基础包：克隆、打包流程======================================
     # 基础包AAR工程目录
@@ -817,19 +821,24 @@ if __name__ == '__main__':
                 mockCache = MockCache(aarcache.targetAarPath, zuckerModuleMainDir)
                 mockCache.mockCache()
                 mockCache.addConfigurations(aar, outputProjectPath, appdir)
+                zuckerResSize = mockCache.zuckerResSize
                 targetAarArray.append(aarcache.targetAarPath)
+                isCacheExist = True
             else:
-                print("未找到缓存aar")
+                isCacheExist = False
 
-        compile.compile()
-        print("compile DONE")
+        if isCacheExist:
+            compile.compile()
+            print("compile DONE")
 
-        # 将修改的AAR进行回滚
-        for path in targetAarArray:
-            revertCache = RevertCache(path)
-            revertCache.revert()
+            # 将修改的AAR进行回滚
+            for path in targetAarArray:
+                revertCache = RevertCache(path)
+                revertCache.revert()
 
-        # 统计大小并输出
-        packSize = PackageSize()
-        packSize.getresult(baseOutputProjectPath, compile.outputProjectPath, appdir, mockCache.zuckerResSize)
-        break
+            # 统计大小并输出
+            packSize = PackageSize()
+            packSize.getresult(baseOutputProjectPath, compile.outputProjectPath, appdir, zuckerResSize)
+        else:
+            print("缓存aar未找到，请重新尝试")
+        # break
