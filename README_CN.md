@@ -17,25 +17,25 @@
 ```
 ./gradlew build
 ```
-将本项目中`src`目录下的`zucker.py`脚本放到Android工程的同级目录下，在终端中执行如下命令：
+在终端中执行如下命令：
 ```
-python zucker.py XXX(Android工程名)
+python3 xxx/zucker.py xxx/targetProjectName(Android工程名)
 ```
-![配置初始化](./imgs/s1.png)
+![配置初始化](./imgs/sample_clone.png)
 
 脚本会自动执行，获取项目中的依赖关系并输出一级节点，可以选择目标节点进行AAR大小计算。
 
-![AAR列表](./imgs/s2.png)
+![AAR列表](./imgs/sample_aar.png)
 
 最后经过打包后，AAR大小就会显示在终端上。
 
-![AAR测量结果](./imgs/s4.png)
+![AAR测量结果](./imgs/sample_aar_size.png)
 
 >建议先在本项目的`simple工程`进行测试，具体流程见工程[README](Simple/README.md)
 
 
 ## 常见问题处理
- -  暂不支持工程依赖 `implementation project(':xxx')` 
+ -  暂不支持工程依赖类型的测量 `implementation project(':xxx')` 
 
 ## 贡献代码
 详见 [CONTRIBUTING](CONTRIBUTING.rst)
