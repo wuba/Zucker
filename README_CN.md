@@ -8,19 +8,26 @@
 - Android编译环境
 
 ## 开始使用
-### 环境准备
+### Demo工程测试
+1. 克隆本工程
+2. 终端cd到本工程下的src目录
+3. 执行python脚本：python3 zucker.py Sample
+4. 根据终端列出的AAR列表，选择一个目标AAR输入得到结果
 
-第一次使用Zucker进行AAR大小计算时建议先在命令行中编译一次。
+### 项目工程测试
+1. 将zucker.py脚本放置在需要测试工程的同级目录
+2. 同[Demo工程测试]步骤2
+3. 同[Demo工程测试]步骤3：python3 zucker.py [targetProjectName](Android工程名)
+4. 同[Demo工程测试]步骤4
 
-编译时建议使用`gradlew`命令，以保证采用了项目的`gradle`配置
-执行如下命令（首次运行时间较长，请耐心等待...）：
+### 注意事项
+1. 确保目标工程在不依赖Zucker脚本的前提下可以正常编译
+2. 编译时使用`gradlew`命令，以保证采用了项目的`gradle`配置
+3. 首次运行时间较长，请耐心等待...
 
 ```
-./gradlew build
-```
-在终端中执行如下命令：
-```
-python3 xxx/zucker.py xxx/targetProjectName(Android工程名)
+./gradlew assembleRelease
+
 ```
 ![配置初始化](./imgs/sample_clone.png)
 
@@ -32,7 +39,7 @@ python3 xxx/zucker.py xxx/targetProjectName(Android工程名)
 
 ![AAR测量结果](./imgs/sample_aar_size.png)
 
->建议先在本项目的`simple工程`进行测试，具体流程见工程[README](Simple/README.md)
+> 建议先在本项目的`sample工程`进行测试，具体流程见工程[README](Sample/README.md)
 
 
 ## 常见问题处理
