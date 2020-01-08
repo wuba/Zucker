@@ -1,15 +1,15 @@
 # Zucker：一个简单、自动化、准确的计算AAR在APK中大小方案
+[英文文档](README_EN.md)
 
 > 我们都知道在项目在引入AAR时，仅计算这个AAR文件大小是不准确的。因为在打包过程中会将aar解压，合并资源文件然后再进行压缩，实际在apk占用大小可能会小于当前aar文件大小。Zucker就是为了计算目标AAR在apk大小而生的
 
 ## 依赖环境
-- Python 3.7+
-- Android Dev
-- Gradle 2.0+
-- *unx/Windows
+- Python 3.0+
+- Android编译环境
 
 ## 开始使用
 ### 环境准备
+
 第一次使用Zucker进行AAR大小计算时建议先在命令行中编译一次。
 
 编译时建议使用`gradlew`命令，以保证采用了项目的`gradle`配置
