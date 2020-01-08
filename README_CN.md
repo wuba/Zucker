@@ -26,7 +26,7 @@
 3. 首次运行时间较长，请耐心等待...
 
 ```
-./gradlew assembleRelease
+./gradlew build
 
 ```
 ![配置初始化](./imgs/sample_clone.png)
