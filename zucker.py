@@ -116,7 +116,8 @@ class Dependency:
     # 移除support包和Android原生依赖包
     exportArr = ["com.android.support", "android.arch.lifecycle", "com.google.android",
                  "com.squareup.leakcanary:leakcanary-android", "android.arch.core",
-                 "org.jetbrains.kotlin:kotlin-stdlib-common", "org.jetbrains:annotations", "project :zucker"]
+                 "org.jetbrains.kotlin:kotlin-stdlib-common", "org.jetbrains:annotations",
+                 "androidx.", "project :"]
 
     def __init__(self, outputProjectPath, appdir):
         self.file_name = "dependency_" + appdir + ".txt"
@@ -234,8 +235,8 @@ class Dependency:
         aars = self.__getArrayNode(array)
         result = []
         for aar in aars:
-            # if self.__checkAARInExport(aar.value):
-            #     continue
+            if self.__checkAARInExport(aar.value):
+                continue
             result.append(aar.value)
         return result
 
@@ -266,7 +267,6 @@ class Dependency:
                 break
         return node
 
-
 class AarCache:
     # 记录传入的aar本地缓存路径
     targetAarPath = ""
@@ -282,6 +282,7 @@ class AarCache:
             gradleHome = os.path.join(self.__envMap.get('HOME'), ".gradle")
         self.gradleUserHome = os.path.join(gradleHome, "caches", "modules-2", "files-2.1")
 
+    # 获取率AAR
     def getAARFile(self, aar_name):
         aarInfo = aar_name.split(":")
         aarPath = os.path.join(self.gradleUserHome, aarInfo[0], aarInfo[1], aarInfo[2])
@@ -291,7 +292,6 @@ class AarCache:
             return False
         aarFile = self.__get_aar_file_(aarPath)
         self.targetAarPath = aarFile
-        print(aarFile)
         return aarFile and os.path.exists(aarFile)
 
     def __get_aar_file_(self, file):
@@ -299,186 +299,6 @@ class AarCache:
             for name in files:
                 if name.endswith(".aar"):
                     return os.path.join(root, name)
-
-        # if not os.path.isdir(file):
-        #     if file.endswith(".aar"):
-        #         return file
-        #     else:
-        #         return ""
-        # else:
-        #     for f in os.listdir(file):
-        #         _file = self.__get_aar_file_(os.path.join(file, f))
-        #         if _file != "":
-        #             return _file
-
-
-class Mock:
-
-    # string_whiteList = ["app_name"];
-    def copyAndWrite(self, aar, sourceAarPath, outputProjectPath, appdir):
-        # 根据名称去获取aar；
-        aars = aar.split(":")
-        name = aars[1] + "-" + aars[2]
-        subpath = os.path.join(outputProjectPath, appdir)
-        targetAarPath = os.path.join(subpath, name + ".zip");
-        copyfile(sourceAarPath, targetAarPath);
-        print("sourceAarPath: " + sourceAarPath)
-        print("targetAarPath: " + targetAarPath)
-        self.executeUzip(subpath, name, aars);
-
-        targetArray = self.readRFile(os.path.join(subpath, name));
-
-        self.inputSelfDefXML(subpath, targetArray);
-
-    def startSelfDefXML(self, subpath):
-        selfDefXml = subpath + "/src/main/res/values/" + "selfdef.xml";
-        xmlHead = open(selfDefXml, mode='w+', encoding='utf-8')
-        xmlHead.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-        xmlHead.write("\n");
-        xmlHead.write(" <resources>");
-        xmlHead.write("\n");
-        xmlHead.close();
-        # if os.path.exists(selfDefXml):
-        #     xmlHead = open(selfDefXml, mode = 'w+', encoding = 'utf-8')
-        #     xmlHead.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-        #     xmlHead.write("\n");
-        #     xmlHead.write(" <resources>");
-        #     xmlHead.write("\n");
-        #     xmlHead.close();
-
-    def endSelfDefXML(self, subpath):
-        selfDefXml = subpath + "/src/main/res/values/" + "selfdef.xml";
-        xmlEnd = open(selfDefXml, mode='a+', encoding='utf-8')
-        xmlEnd.write("</resources>");
-        xmlEnd.close();
-        # if os.path.exists(selfDefXml):
-        #     xmlEnd = open(selfDefXml, mode = 'a+', encoding = 'utf-8')
-        #     xmlEnd.write("</resources>");
-        #     xmlEnd.close();
-
-    # for k in self.targetArray:
-    #   print (k);
-    # 指定src/main/res/values文件夹下新建selfdef.xml文件
-    def inputSelfDefXML(self, subpath, targetArray):
-        selfDefXml = subpath + "/src/main/res/values/" + "selfdef.xml";
-        if os.path.exists(selfDefXml):
-            with open(selfDefXml, mode='a+', encoding='utf-8') as ff:
-                self.inputTargetArray(ff, targetArray);
-        else:
-            with open(selfDefXml, mode='a+', encoding='utf-8') as ff:
-                self.inputTargetArray(ff, targetArray);
-
-    # 拆解再拼装
-    def readRFile(self, subpath):
-        targetArray = [];
-        sourceArray = [];
-        # 读取R.txt文件；
-        rTxtFile = subpath + "/" + "R.txt";
-        rContext = open(rTxtFile, 'r').readlines();
-        for i in rContext:
-            sourceArray.append(i.strip());
-        print("组装完毕");
-        for j in sourceArray:
-            itemArray = j.split();
-            item = "";
-            if itemArray[1] == 'style':
-                # print ("===========拼装style，需要递归调用=========");
-                itemStr = itemArray[2] + "_";
-                for itemSpan in re.finditer('_', itemStr):
-                    subItem = itemStr[0:(itemSpan.span()[0])];
-                    subItem = subItem.replace("_", ".");
-                    subItem = "<" + itemArray[1] + " name=\"" + subItem + "\"/>";
-                    if subItem not in targetArray:
-                        targetArray.append(subItem);
-                # item = "<" + itemArray[1] + " name=\"" + itemArray[2] + "\"/>";
-                # 自己处理
-                item = "";
-            elif itemArray[0] == 'int[]' and itemArray[1] == 'styleable':
-                # print ("===========拼装styleable数组=========");
-                item = "<" + "declare-styleable" + " name=\"" + itemArray[2] + "\"/>";
-            elif itemArray[0] == 'int' and itemArray[1] == 'styleable':
-                # print ("===========拼装styleable=========");
-                item = "<" + "id" + " name=\"" + itemArray[2] + "\"/>";
-            elif itemArray[1] == 'string' and itemArray[2] == 'app_name':
-                continue
-            else:
-                item = "<" + itemArray[1] + " name=\"" + itemArray[2] + "\"/>";
-            # print (item);
-
-            if item != "":
-                targetArray.append(item);
-
-        return targetArray;
-
-    def inputTargetArray(self, ff, myArray):
-        ff.write("\n");
-        for k in myArray:
-            ff.write(k);
-            ff.write("\n");
-
-    # 解压缩并得到当前包名，获取解压之后的classes.jar文件放在libs文件夹下，命名规则：classes_WubaZXing.jar
-    def executeUzip(self, subpath, name, aars):
-        file_name = subpath + "/" + name + ".zip"
-        file_zip = zipfile.ZipFile(file_name, 'r')
-        for file in file_zip.namelist():
-            file_zip.extract(file, subpath + "/" + name)
-        file_zip.close()
-
-        # gradleFileName = "classes" + "_" + aars[1] + ".jar";
-        # sourceJarFile = subpath + "/" + name + "/" + name + "/" + "classes.jar";
-        # targetJarFile = subpath + "/" + "libs" + "/" + "classes" + "_" + aars[1] + ".jar";
-        # copyfile(sourceJarFile, targetJarFile);
-
-        # self.updateBuildGradle(subpath, gradleFileName)
-        # self.addConfigurations(subpath, aars)
-
-    # 修改gradle文件
-    # implementation files('libs/classes_sdk.jar')
-    # implementation files('libs/classes_WubaZxing.jar')
-
-    def updateBuildGradle(self, subpath, gradleFileName):
-        buildGradle = subpath + "/build.gradle";
-        gradleFile = open(buildGradle, 'r');
-        content = gradleFile.read();
-        gradleFile = open(buildGradle, 'w');
-        post = content.find("dependencies {")
-        gradleFileName = "implementation files('libs/" + gradleFileName + "')"
-        if post != -1:
-            content = content[:post + len("dependencies {")] + "\n" + gradleFileName + "\n" + content[post + len(
-                "dependencies {"):]
-            gradleFile.write(content)
-        gradleFile.close()
-
-    # #添加配置
-    # #configurations {
-    # #all*.exclude group: 'com.wuba.certify'
-    # #all*.exclude group: 'com.wuba.zxing'
-    # #}
-    # def addConfigurations(self, aar, outputProjectPath, appdir):
-
-    #     aars = aar.split(":")
-    #     name = aars[1] + "-" + aars[2]
-    #     subpath = os.path.join(outputProjectPath, appdir)
-
-    #     buildGradle = subpath + "/build.gradle";
-    #     if os.path.exists(buildGradle):
-    #         #先读文件
-    #         configurations = open(buildGradle, 'r')
-    #         content = configurations.read();
-    #         post = content.find("configurations {")
-    #         if post != -1:
-    #             configurations = open(buildGradle, 'w');
-    #             content = content[:post+len("configurations {")] + "\n" + "all*.exclude group: \'" +aars[0] + "\'\n" + content[post+len("configurations {"):]
-    #             configurations.write(content)
-    #         else:
-    #             configurations = open(buildGradle, 'a+');
-    #             configurations.write("configurations {");
-    #             configurations.write("\n");
-    #             configurations.write("all*.exclude group: \'" + aars[0] + "\'");
-    #             configurations.write("\n");
-    #             configurations.write("}");
-    #         configurations.close();
-
 
 class Compile:
     def __init__(self, output_project_path):
@@ -550,18 +370,6 @@ class Compile:
             f.write(buildToolsVersion + "\n")
             f.write("}\n\n")
             f.write("dependencies {\n\n}")
-        # #创建一个res文件夹
-        # res = os.path.join(main, "res")
-        # if not Path(res).exists():
-        #     os.mkdir(res)
-        # #创建一个values文件夹
-        # myvalues = os.path.join(res, "values")
-        # if not Path(myvalues).exists():
-        #     os.mkdir(myvalues)
-        # #创建self.def文件夹
-        # selfdefxml = os.path.join(myvalues, "selfdef.xml")
-        # with open(selfdefxml, 'w') as f:
-        #     f.write("")
         return main
 
     def clearflavors(self, app_dirs):
@@ -692,27 +500,26 @@ class Compile:
 
 class MockCache:
     def __init__(self, originAarCachePath, targetMainSrcPath):
-        # /Users/huhao/.gradle/caches/modules-2/files-2.1/com.wuba.wuxian.sdk/WubaZxing/1.1.2/64d742bfb9c1e36263155a126312ab796b8d5528/WubaZxing-1.1.2.aar
         # 复制文件
-        mockAarCachePath = originAarCachePath.replace(".aar", "-origin.zip")
-        mockAarOriginPath = originAarCachePath.replace(".aar", "-origin.aar")
-        copyfile(originAarCachePath, mockAarCachePath)
-        copyfile(originAarCachePath, mockAarOriginPath)
+        self.originAarCachePath = originAarCachePath
+        self.targetMainSrcPath = targetMainSrcPath
+        self.mockAarCachePath = originAarCachePath.replace(".aar", "-origin.zip")
+        self.mockAarOriginPath = originAarCachePath.replace(".aar", "-origin.aar")
+
+    def mockCache(self):
+        copyfile(self.originAarCachePath, self.mockAarCachePath)
+        copyfile(self.originAarCachePath, self.mockAarOriginPath)
 
         # 解压
-        unzipFile = os.path.dirname(originAarCachePath) + "/" + (os.path.basename(originAarCachePath)).replace(".aar",
-                                                                                                               "")
-        file_zip = zipfile.ZipFile(mockAarCachePath, 'r')
+        unzipFile = os.path.dirname(self.originAarCachePath) + "/" + (os.path.basename(self.originAarCachePath)).replace(".aar","")
+        file_zip = zipfile.ZipFile(self.mockAarCachePath, 'r')
         for file in file_zip.namelist():
             file_zip.extract(file, unzipFile)
         file_zip.close()
 
-        # 单纯用这种方式还是不行，还是需要mock R文件，改成xml文件；
-        # mockR 文件也不行，还是会出现重复和冲突的问题；
-        # 通过修改文件大小的方式解决
-        self.copyMockFile(unzipFile, targetMainSrcPath)
+        self._copyMockFile(unzipFile, self.targetMainSrcPath)
         # 基础Mock
-        for root, dirs, files in os.walk(os.path.dirname(targetMainSrcPath + "/res"), topdown=False):
+        for root, dirs, files in os.walk(os.path.dirname(self.targetMainSrcPath + "/res"), topdown=False):
             for name in files:
                 if name.startswith('values') and name.endswith('.xml'):
                     pass
@@ -765,30 +572,21 @@ class MockCache:
             for name in files:
                 if name in whiteList:
                     pass
-                # elif name.endswith(".xml"):
-                #     pass
                 else:
                     os.remove(os.path.join(root, name))
-                # if (name not in whiteList) and (name.endswith(".xml")):
-                #     os.remove(os.path.join(root, name))
-            # for name in dirs:
-            #     if name not in whiteList:
-            #         os.rmdir(os.path.join(root, name))
-
         # 删除原有AAR
-        for root, dirs, files in os.walk(os.path.dirname(originAarCachePath), topdown=False):
+        for root, dirs, files in os.walk(os.path.dirname(self.originAarCachePath), topdown=False):
             for name in files:
-                if name in os.path.basename(originAarCachePath):
+                if name in os.path.basename(self.originAarCachePath):
                     os.remove(os.path.join(root, name))
 
         # 计算zucker库里面res的文件大小
-
-        self.zuckerResSize = self.get_dirsize(os.path.dirname(targetMainSrcPath + "/res"))
+        self.zuckerResSize = self._get_dirsize(os.path.dirname(self.targetMainSrcPath + "/res"))
         # 压缩Mock的File
-        self.zipMockFile(unzipFile)
+        self._zipMockFile(unzipFile)
 
-    def get_dirsize(self, path):
-        ''' 计算指定的路径下的所有文件的大小 '''
+    def _get_dirsize(self, path):
+        # 计算指定的路径下的所有文件的大小
         if os.path.isdir(path):
             file_size, dir_list = 0, [path]
             while dir_list:
@@ -806,7 +604,7 @@ class MockCache:
         else:
             print('找不到%s文件' % path)
 
-    def copytree(self, src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2):
+    def _copytree(self, src, dst, symlinks=False, ignore=None, copy_function=shutil.copy2):
         names = os.listdir(src)
         if ignore is not None:
             ignored_names = ignore(src, names)
@@ -835,12 +633,12 @@ class MockCache:
                             continue
                         # otherwise let the copy occurs. copy2 will raise an error
                         if os.path.isdir(srcname):
-                            self.copytree(srcname, dstname, symlinks, ignore,
-                                          copy_function)
+                            self._copytree(srcname, dstname, symlinks, ignore,
+                                           copy_function)
                         else:
                             copy_function(srcname, dstname)
                 elif os.path.isdir(srcname):
-                    self.copytree(srcname, dstname, symlinks, ignore, copy_function)
+                    self._copytree(srcname, dstname, symlinks, ignore, copy_function)
                 else:
                     # Will raise a SpecialFileError for unsupported file types
                     copy_function(srcname, dstname)
@@ -860,14 +658,14 @@ class MockCache:
             raise shutil.Error(errors)
         return dst
 
-    def copyMockFile(self, originPath, targetMainSrcPath):
+    def _copyMockFile(self, originPath, targetMainSrcPath):
         originPath = originPath + "/res"
         if os.path.exists(originPath):
-            self.copytree(originPath, targetMainSrcPath + "/res")
+            self._copytree(originPath, targetMainSrcPath + "/res")
         elif not os.path.exists(targetMainSrcPath + "/res"):
             os.makedirs(targetMainSrcPath + "/res")
 
-    def zipMockFile(self, start_dir):
+    def _zipMockFile(self, start_dir):
         start_dir = start_dir
         file_news = start_dir + '.aar'
 
@@ -881,8 +679,6 @@ class MockCache:
         return file_news
 
     def addConfigurations(self, aar, outputProjectPath, appdir):
-
-        print("替换build.gradle")
         aars = aar.split(":")
         name = aars[1] + "-" + aars[2]
         subpath = os.path.join(outputProjectPath, appdir)
@@ -908,10 +704,13 @@ class MockCache:
                 configurations.write("}");
             configurations.close();
 
-
-class revertCache:
+class RevertCache:
+    # 回滚修改的Cache目标AAR
     def __init__(self, originAarCachePath):
-        fileName = os.path.dirname(originAarCachePath)
+        self.originAarCachePath = originAarCachePath
+
+    def revert(self):
+        fileName = os.path.dirname(self.originAarCachePath)
         dirs = os.listdir(fileName)
         for root, dirs, files in os.walk(fileName, topdown=False):
             for name in files:
@@ -929,8 +728,8 @@ class revertCache:
                     new_name = new_name.replace("-origin.aar", ".aar")
                     os.rename(root + "/" + name, root + "/" + new_name)
 
-
 class PackageSize:
+    # 统计大小，并输出最终结果
     def getresult(self, baseOutputProjectPath, aarOutputProjectPath, appdir, zuckerResSize):
         basePackSize = 0
         aarPackSize = 0
@@ -939,24 +738,30 @@ class PackageSize:
         with open(basePackSizePath) as f:
             for line in f.readlines():
                 basePackSize = line
-                print("basePackSize: " + line)
+                print("基础包大小(basePackSize,单位Byte): " + line)
                 break
         with open(aarPackSizePath) as f:
             for line in f.readlines():
                 aarPackSize = line
                 aarPackSize = int(aarPackSize) - (int(zuckerResSize)*2)
-                print("aarPackSize: " + str(aarPackSize))
+                print("替换后的APK大小(aarPackSize,单位Byte): " + str(aarPackSize))
                 break
         aarSize = int(basePackSize) - int(aarPackSize)
-        print("aarSize: " + str(aarSize))
+        print("AAR大小(aarSize,单位Byte): " + str(aarSize))
 
 
 if __name__ == '__main__':
     sys.argv.append("ZuckerDemo")
-    projectName = sys.argv[1]  # 工程文件夹名称
-    # appName = sys.argv[2] #应用入口名称
-    currentPath = os.getcwd()  # 当前目录
-    outputPath = os.path.join(currentPath, "output")  # 输出目录
+    # 工程文件夹名称
+    projectName = sys.argv[1]
+    # 当前目录
+    currentPath = os.getcwd()
+    # 输出目录
+    outputPath = os.path.join(currentPath, "output")
+    # 资源大小
+    zuckerResSize = ""
+    # 是否找到缓存
+    isCacheExist = False
 
     # 基础包：克隆、打包流程======================================
     # 基础包AAR工程目录
@@ -996,12 +801,8 @@ if __name__ == '__main__':
     print("clearAARFlavors DONE")
     compile.insertscript(appDirs)
     print("insertAARScript DONE")
-    print("aars")
-    print(appDirs)
-    print("aars")
-    # compile.compile()
-    # print("compile DONE")
 
+    # 遍历工程下依赖的所有AAR
     for appdir in appDirs:
         dependency = Dependency(outputProjectPath, appdir)
         aars = dependency.gettoplevelaars()
@@ -1009,30 +810,35 @@ if __name__ == '__main__':
             print(aar)
         targetaar = input("输入AAR名称及版本，格式xxx.xxx:xxx:xxx:")
         resultaars = dependency.getInputAAR(targetaar)
-        print("输出AAR----")
+        print("输出AAR:")
         print(resultaars)
 
-        # mock = Mock()
-        # mock.startSelfDefXML(os.path.join(outputProjectPath, "zucker"))
         targetAarArray = []
         for aar in resultaars:
             aarcache = AarCache()
             if aarcache.getAARFile(aar):
                 print(aarcache.targetAarPath)
-                # mock.copyAndWrite(aar, aarcache.targetAarPath, outputProjectPath, "zucker")
-                # 偷梁换柱
                 mockCache = MockCache(aarcache.targetAarPath, zuckerModuleMainDir)
+                mockCache.mockCache()
                 mockCache.addConfigurations(aar, outputProjectPath, appdir)
+                zuckerResSize = mockCache.zuckerResSize
                 targetAarArray.append(aarcache.targetAarPath)
+                isCacheExist = True
             else:
-                print("未找到缓存aar")
-        # mock.endSelfDefXML(os.path.join(outputProjectPath, "zucker"))
+                isCacheExist = False
 
-        compile.compile()
-        print("compile DONE")
-        # 完璧归赵
-        for path in targetAarArray:
-            revertCache(path)
-        packSize = PackageSize()
-        packSize.getresult(baseOutputProjectPath, compile.outputProjectPath, appdir, mockCache.zuckerResSize)
-        break
+        if isCacheExist:
+            compile.compile()
+            print("compile DONE")
+
+            # 将修改的AAR进行回滚
+            for path in targetAarArray:
+                revertCache = RevertCache(path)
+                revertCache.revert()
+
+            # 统计大小并输出
+            packSize = PackageSize()
+            packSize.getresult(baseOutputProjectPath, compile.outputProjectPath, appdir, zuckerResSize)
+        else:
+            print("缓存aar未找到，请重新尝试")
+        # break
