@@ -1,7 +1,7 @@
-# Zucker:A easier accurater automate way to calculate aar real size in the apk 
+# Zucker: An easier way to automatically calculate the size of AAR in apk.
 
 
-[中文文档](README_CN.md)
+[中文文档](README_CN.mad)
 
 > As we all know,that when the project was introduced with AAR, it was not accurate to calculate only the aAR file size. Because aar is unzipped during packaging, the resource files are merged and then compressed, the actual apk footprint may be smaller than the current aar file size. Zucker was born to calculate the size of the target AAR at apk.
 
