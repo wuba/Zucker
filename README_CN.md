@@ -7,7 +7,6 @@
 - Python 3.7+
 - Android Dev
 - Gradle 2.0+
-- Unix/Linux/MacOS/Windows
 
 ## 开始使用
 ### 环境准备
