@@ -1,26 +1,33 @@
-# Zucker：一个简单、自动化、准确的计算AAR在APK中大小方案
+# Zucker：一个简单无侵害计算AAR独有大小的工具
 [英文文档](README_EN.md)
 
-> 我们都知道在项目在引入AAR时，仅计算这个AAR文件大小是不准确的。因为在打包过程中会将aar解压，合并资源文件然后再进行压缩，实际在apk占用大小可能会小于当前aar文件大小。Zucker就是为了计算目标AAR在apk大小而生的
+> AAR独立大小和被引入到工程后打包后占用的大小是不一样的，这个有经验的开发者都应该了解。AAR独立大小一目了然，但是怎么计算AAR在APK中的独立占有大小（独有大小）呢？Zucker就此开源给出了一份答案。
 
 ## 依赖环境
 - Python 3.0+
 - Android编译环境
 
 ## 开始使用
-### 环境准备
+### Demo工程测试
+1. 克隆本工程
+2. 终端cd到本工程下的src目录
+3. 执行python脚本：python3 zucker.py Sample
+4. 根据终端列出的AAR列表，选择一个目标AAR输入得到结果
 
-第一次使用Zucker进行AAR大小计算时建议先在命令行中编译一次。
+### 项目工程测试
+1. 将zucker.py脚本放置在需要测试工程的同级目录
+2. 同[Demo工程测试]步骤2
+3. 同[Demo工程测试]步骤3：python3 zucker.py [targetProjectName](Android工程名)
+4. 同[Demo工程测试]步骤4
 
-编译时建议使用`gradlew`命令，以保证采用了项目的`gradle`配置
-执行如下命令（首次运行时间较长，请耐心等待...）：
+### 注意事项
+1. 确保目标工程在不依赖Zucker脚本的前提下可以正常编译
+2. 编译时使用`gradlew`命令，以保证采用了项目的`gradle`配置
+3. 首次运行时间较长，请耐心等待...
 
 ```
 ./gradlew build
-```
-在终端中执行如下命令：
-```
-python3 xxx/zucker.py xxx/targetProjectName(Android工程名)
+
 ```
 ![配置初始化](./imgs/sample_clone.png)
 
@@ -32,7 +39,7 @@ python3 xxx/zucker.py xxx/targetProjectName(Android工程名)
 
 ![AAR测量结果](./imgs/sample_aar_size.png)
 
->建议先在本项目的`simple工程`进行测试，具体流程见工程[README](Simple/README.md)
+> 建议先在本项目的`sample工程`进行测试，具体流程见工程[README](Sample/README.md)
 
 
 ## 常见问题处理
