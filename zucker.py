@@ -841,4 +841,4 @@ if __name__ == '__main__':
             packSize.getresult(baseOutputProjectPath, compile.outputProjectPath, appdir, zuckerResSize)
         else:
             print("缓存aar未找到，请重新尝试")
-        # break
+        break
