@@ -21,29 +21,23 @@ import subprocess
 from shutil import copyfile
 import shutil
 import re
-import urllib
-import urllib.request
-import json
 import zipfile
-import argparse
-import distutils.spawn
-import datetime
-import time
-import ftplib
 import copy
 from pathlib import Path
 
 
 class CloneProject:
-    def clone(self, current_path, outputPath, target_project_name, output_project_name):
+    target_project_name = ""
+
+    def clone(self, current_path, output_path, target_project_name, output_project_name):
         self.target_project_name = target_project_name
         # 如果output目录不存在，则创建文件夹
-        if not os.path.exists(outputPath):
-            os.mkdir(outputPath)
-        self.__copydir(current_path, outputPath, output_project_name, 0)
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+        self.__copy_dir(current_path, output_path, output_project_name, 0)
 
     # 拷贝文件夹
-    def __copydir(self, source_dir, target_dir, target, index):
+    def __copy_dir(self, source_dir, target_dir, target, index):
         # 源文件夹
         dir = os.path.join(source_dir, target)
         if index == 0:
@@ -53,9 +47,9 @@ class CloneProject:
         # 源文件夹下的文件列表
         files = os.listdir(dir)
         # 目标文件夹
-        targetdir = os.path.join(target_dir, target)
-        if not os.path.exists(targetdir):
-            os.mkdir(targetdir)
+        target_dir = os.path.join(target_dir, target)
+        if not os.path.exists(target_dir):
+            os.mkdir(target_dir)
         if index == 0:
             self.fileSize = 0
             for dirpath, dirnames, filenames in os.walk(dir):
@@ -64,10 +58,10 @@ class CloneProject:
             self.count = 0
         for f in files:
             sourcefile = os.path.join(dir, f)
-            targetfile = os.path.join(targetdir, f)
+            targetfile = os.path.join(target_dir, f)
             if os.path.isdir(sourcefile):
                 index += 1
-                self.__copydir(dir, targetdir, f, index)
+                self.__copy_dir(dir, target_dir, f, index)
             if os.path.isfile(sourcefile) and not os.path.exists(targetfile):
                 copyfile(sourcefile, targetfile)
                 self.count += 1
@@ -86,20 +80,20 @@ class TreeNode:
         self.parents = set()
         self.parent = None
 
-    def addChild(self, node):
+    def add_child(self, node):
         self.children.add(node)
 
-    def addParent(self, node):
+    def add_parent(self, node):
         self.parent = node
         self.parents.add(node)
 
-    def isRoot(self):
+    def is_root(self):
         return len(self.parents) == 0 or self.parent is None
 
-    def getLevel(self):
-        if self.isRoot():
+    def get_level(self):
+        if self.is_root():
             return 0
-        return self.parent.getLevel() + 1
+        return self.parent.get_level() + 1
 
 
 class Dependency:
@@ -119,12 +113,12 @@ class Dependency:
                  "org.jetbrains.kotlin:kotlin-stdlib-common", "org.jetbrains:annotations",
                  "androidx.", "project :"]
 
-    def __init__(self, outputProjectPath, appdir):
-        self.file_name = "dependency_" + appdir + ".txt"
-        self.projectPath = outputProjectPath
-        self.appDir = appdir
+    def __init__(self, output_project_path, app_dir):
+        self.file_name = "dependency_" + app_dir + ".txt"
+        self.projectPath = output_project_path
+        self.appDir = app_dir
 
-    def gettoplevelaars(self):
+    def get_top_level_aars(self):
         self.rootNode = TreeNode(self.appDir)
         self.stack.append(self.rootNode)
         self.allNode.append(self.rootNode)
@@ -133,22 +127,22 @@ class Dependency:
         # cd到工程目录下，才能正常的读取gradle命令
         self.commend = ("cd %s\nchmod +x gradlew\n" % self.projectPath) + self.commend
         subprocess.check_call(self.commend, shell=True)
-        self.__checkDependencyFile()
+        self.__check_dependency_file()
 
         nodes = []
         for n in self.allNode:
             nodeName = n.value
-            if len(n.parents) >= 1 and not self.__checkAARInExport(nodeName):
+            if len(n.parents) >= 1 and not self.__check_aar_in_export(nodeName):
                 for p in n.parents:
                     if p == self.rootNode:
                         nodes.append(nodeName)
                         continue
         return nodes
 
-    def __checkDependencyFile(self):
-        depFile = os.path.join(self.projectPath, self.file_name)
+    def __check_dependency_file(self):
+        dep_file = os.path.join(self.projectPath, self.file_name)
         # 逐行读取文件
-        with open(depFile) as f:
+        with open(dep_file) as f:
             line = f.readline()
             while line:
                 line = line.rstrip("\n")
@@ -157,41 +151,42 @@ class Dependency:
                     line = f.readline()
                     continue
                 line = line.replace("\\", "+").replace("+---", "    ").replace("|", " ").replace("     ", "!")
-                currentLevel = line.count("!")
-                if currentLevel == 0:
+                current_level = line.count("!")
+                if current_level == 0:
                     line = f.readline()
                     continue
-                lastParent = self.stack.pop()
-                parentLevel = lastParent.getLevel()
-                while not (currentLevel > parentLevel):
-                    lastParent = self.stack.pop()
-                    parentLevel = lastParent.getLevel()
+                last_parent = self.stack.pop()
+                parent_level = last_parent.get_level()
+                while not (current_level > parent_level):
+                    last_parent = self.stack.pop()
+                    parent_level = last_parent.get_level()
                 line = line.replace("!", "").replace(" -> ", ":").replace(" (*)", "")
                 buffer = line.split(":")
-                tmpLength = len(buffer)
-                if tmpLength > 2:
+                tmp_length = len(buffer)
+                if tmp_length > 2:
                     line = "%s:%s:%s" % (buffer[0], buffer[1], buffer[-1])
                 if line in self.__node_set:
                     for node in self.allNode:
                         if node.value == line:
-                            self.__update_node(node, lastParent)
+                            self.__update_node(node, last_parent)
                             break
                 else:
                     node = TreeNode(line)
-                    self.__update_node(node, lastParent)
+                    self.__update_node(node, last_parent)
                     self.__node_set.add(node.value)
                     self.allNode.append(node)
 
-                node.addParent(lastParent)
-                lastParent.addChild(node)
-                self.stack.append(lastParent)
+                node.add_parent(last_parent)
+                last_parent.add_child(node)
+                self.stack.append(last_parent)
                 self.stack.append(node)
                 line = f.readline()
 
     # 更新依赖关系
-    def __update_node(self, node, parent):
-        node.addParent(parent)
-        parent.addChild(node)
+    @staticmethod
+    def __update_node(node, parent):
+        node.add_parent(parent)
+        parent.add_child(node)
 
     """
     # 获取输入的多个aar依赖：该方法是要统计系列依赖比如fresco，animated-gif，webpsupport，animated-webp
@@ -203,22 +198,22 @@ class Dependency:
         经过一次遍历后，该des set即为结果set
     """
 
-    def __getArrayNode(self, array):
-        inputSet = set()
+    def __get_array_node(self, array):
+        input_set = set()
         result = set()
         # 遍历输入的aar列表
         for s in array:
-            n = self.__findNodeByName(s)
+            n = self.__find_node_by_name(s)
             if n is None:
                 print("暂无该依赖节点%s" % s)
                 continue
-            inputSet.add(n)
+            input_set.add(n)
             result.add(n)
             self.__add_children_node(n, result)
         # copy依赖的节点,作为结果set
         des = result.copy()
         for rNode in result:
-            if rNode in inputSet or 1 == len(rNode.parents):
+            if rNode in input_set or 1 == len(rNode.parents):
                 continue
             # 移除support库
             for p in rNode.parents:
@@ -227,45 +222,46 @@ class Dependency:
                     break
         return des
 
-    def getInputAAR(self, target_aar):
-        if self.__checkAARInExport(target_aar):
+    def get_input_aar(self, target_aar):
+        if self.__check_aar_in_export(target_aar):
             print("不支持【%s】该类型的库统计！" % target_aar)
             return []
         array = [target_aar.lstrip(" ").rstrip(" ")]
-        aars = self.__getArrayNode(array)
+        aars = self.__get_array_node(array)
         result = []
         for aar in aars:
-            if self.__checkAARInExport(aar.value):
+            if self.__check_aar_in_export(aar.value):
                 continue
             result.append(aar.value)
         return result
 
     # 校验传入的aar是否在去除列表中
-    def __checkAARInExport(self, aar_name):
-        isIn = False
+    def __check_aar_in_export(self, aar_name):
+        result = False
         for s in self.exportArr:
             if aar_name.startswith(s):
-                isIn = True
+                result = True
                 break
-        return isIn
+        return result
 
     # 遍历所有节点，记录在set中
-    def __add_children_node(self, node, nodeset):
+    def __add_children_node(self, node, node_set):
         if len(node.children) == 0:
-            nodeset.add(node)
+            node_set.add(node)
             return
         for child in node.children:
-            nodeset.add(child)
-            self.__add_children_node(child, nodeset)
+            node_set.add(child)
+            self.__add_children_node(child, node_set)
 
     # 根据名称获取依赖节点
-    def __findNodeByName(self, node_name):
+    def __find_node_by_name(self, node_name):
         node = None
         for n in self.allNode:
             if n.value.find(node_name) != -1:
                 node = n
                 break
         return node
+
 
 class AarCache:
     # 记录传入的aar本地缓存路径
@@ -276,37 +272,39 @@ class AarCache:
 
     def __init__(self):
         # 先检查是否将路径写在环境变量中
-        gradleHome = self.__envMap.get("GRADLE_USER_HOME")
-        if gradleHome is None or not os.path.exists(gradleHome):
+        gradle_home = self.__envMap.get("GRADLE_USER_HOME")
+        if gradle_home is None or not os.path.exists(gradle_home):
             # 查看默认路径 ~/user/.gradle
-            gradleHome = os.path.join(self.__envMap.get('HOME'), ".gradle")
-        self.gradleUserHome = os.path.join(gradleHome, "caches", "modules-2", "files-2.1")
+            gradle_home = os.path.join(self.__envMap.get('HOME'), ".gradle")
+        self.gradleUserHome = os.path.join(gradle_home, "caches", "modules-2", "files-2.1")
 
     # 获取率AAR
-    def getAARFile(self, aar_name):
-        aarInfo = aar_name.split(":")
-        aarPath = os.path.join(self.gradleUserHome, aarInfo[0], aarInfo[1], aarInfo[2])
+    def get_aar_file(self, aar_name):
+        aar_info = aar_name.split(":")
+        aar_path = os.path.join(self.gradleUserHome, aar_info[0], aar_info[1], aar_info[2])
         # print(aarPath)
-        if not os.path.exists(aarPath):
+        if not os.path.exists(aar_path):
             print("aar 本地缓存不存在")
             return False
-        aarFile = self.__get_aar_file_(aarPath)
-        self.targetAarPath = aarFile
-        return aarFile and os.path.exists(aarFile)
+        aar_file = self.__get_aar_file_(aar_path)
+        self.targetAarPath = aar_file
+        return aar_file and os.path.exists(aar_file)
 
-    def __get_aar_file_(self, file):
+    @staticmethod
+    def __get_aar_file_(file):
         for root, dirs, files in os.walk(file, topdown=False):
             for name in files:
                 if name.endswith(".aar"):
                     return os.path.join(root, name)
 
+
 class Compile:
     def __init__(self, output_project_path):
         self.outputProjectPath = output_project_path
 
-    def newmodule(self, app_dirs):
-        compileSdkVersion = ""
-        buildToolsVersion = ""
+    def new_module(self, app_dirs):
+        compile_sdk_version = ""
+        build_tools_version = ""
         # settings.gradle
         settings = os.path.join(self.outputProjectPath, "settings.gradle")
         with open(settings, 'a+') as f:
@@ -316,33 +314,33 @@ class Compile:
         STATEMENT = "    implementation project(':zucker')\n"
         for dir in app_dirs:
             lines = []
-            gradleFile = os.path.join(self.outputProjectPath, dir, "build.gradle")
-            with open(gradleFile, 'r') as f:
-                hasFoundDependencies = False
-                bracketCount = 0
+            gradle_file = os.path.join(self.outputProjectPath, dir, "build.gradle")
+            with open(gradle_file, 'r') as f:
+                has_found_dependencies = False
+                bracket_count = 0
                 for line in f.readlines():
                     lines.append(line)
                     if line.lstrip().startswith("//"):
                         pass
-                    if hasFoundDependencies == True:
+                    if has_found_dependencies:
                         for index, c in enumerate(line):
                             if c == '{':
-                                bracketCount += 1
+                                bracket_count += 1
                             elif c == '}':
-                                bracketCount -= 1
-                        if bracketCount < 0:
+                                bracket_count -= 1
+                        if bracket_count < 0:
                             lines.remove(STATEMENT)
-                            hasFoundDependencies = False
-                            bracketCount = 0
+                            has_found_dependencies = False
+                            bracket_count = 0
                     if "compileSdkVersion" in line:
-                        compileSdkVersion = line
+                        compile_sdk_version = line
                     elif "buildToolsVersion" in line:
-                        buildToolsVersion = line
+                        build_tools_version = line
                     elif regex.search(line):
-                        hasFoundDependencies = True
-                        bracketCount += 1
+                        has_found_dependencies = True
+                        bracket_count += 1
                         lines.append(STATEMENT)
-            with open(gradleFile, "w") as f:
+            with open(gradle_file, "w") as f:
                 f.writelines(lines)
                 f.close()
         # zucker dir
@@ -366,22 +364,22 @@ class Compile:
         with open(build, 'w') as f:
             f.write("apply plugin: 'com.android.library'\n\n")
             f.write("android {\n")
-            f.write(compileSdkVersion + "\n")
-            f.write(buildToolsVersion + "\n")
+            f.write(compile_sdk_version + "\n")
+            f.write(build_tools_version + "\n")
             f.write("}\n\n")
             f.write("dependencies {\n\n}")
         return main
 
-    def clearflavors(self, app_dirs):
-        self.__clearbucketcontent('productFlavors', app_dirs)
+    def clear_flavors(self, app_dirs):
+        self.__clear_bucket_content('productFlavors', app_dirs)
 
-    def insertscript(self, app_dirs):
+    def insert_script(self, app_dirs):
         PATH = self.outputProjectPath
         for targetFile in app_dirs:
-            packageSizePath = os.path.join(PATH, targetFile, "zucker.txt")
-            open(packageSizePath, 'w')
-            gradleFile = os.path.join(PATH, targetFile, 'build.gradle')
-            with open(gradleFile, 'a+') as f:
+            package_size_path = os.path.join(PATH, targetFile, "zucker.txt")
+            open(package_size_path, 'w')
+            gradle_file = os.path.join(PATH, targetFile, 'build.gradle')
+            with open(gradle_file, 'a+') as f:
                 f.write("\n")
                 f.write("android.applicationVariants.all { variant ->\n")
                 f.write("   variant.outputs.all { output ->\n")
@@ -391,7 +389,7 @@ class Compile:
                 f.write("           assembleDebug.doLast {\n")
                 f.write("               def apkSize = file.length().toString()\n")
                 f.write("               print('ApkSize: '+apkSize)\n")
-                f.write("               def packageSizeFile = new File(\"" + (packageSizePath) + "\")\n")
+                f.write("               def packageSizeFile = new File(\"" + package_size_path + "\")\n")
                 f.write("               packageSizeFile.withWriter { writer ->\n")
                 f.write("                     writer.write(apkSize)\n")
                 f.write("               }\n")
@@ -400,94 +398,94 @@ class Compile:
                 f.write("   }\n")
                 f.write("}\n\n")
 
-    def findappdirs(self):
-        appDirs = []
+    def find_app_dirs(self):
+        app_dirs = []
         PATH = self.outputProjectPath
-        dirList = [x for x in os.listdir(PATH) if
-                   os.path.isdir(os.path.join(PATH, x)) and not x.startswith('.') and not x == 'gradle']
-        for targetFile in dirList:
-            gradleFile = os.path.join(PATH, targetFile, 'build.gradle')
-            if os.path.isfile(gradleFile):
-                with open(gradleFile) as f:
+        dir_list = [x for x in os.listdir(PATH) if
+                    os.path.isdir(os.path.join(PATH, x)) and not x.startswith('.') and not x == 'gradle']
+        for targetFile in dir_list:
+            gradle_file = os.path.join(PATH, targetFile, 'build.gradle')
+            if os.path.isfile(gradle_file):
+                with open(gradle_file) as f:
                     for index, line in enumerate(f.readlines()):
                         if "apply plugin: 'com.android.application'" in line:
-                            appDirs.append(targetFile)
+                            app_dirs.append(targetFile)
                             break
-        return appDirs
+        return app_dirs
 
-    def __clearbucketcontent(self, TAG, appDirs):
+    def __clear_bucket_content(self, TAG, appDirs):
         PATH = self.outputProjectPath
         for targetFile in appDirs:
-            gradleFile = os.path.join(PATH, targetFile, 'build.gradle')
-            with open(gradleFile, 'r') as f:
-                taglines = []
-                hasFindTag = False
-                hasFindStartTag = False
-                hasFindEndTag = False
-                bracketCount = 0
+            gradle_file = os.path.join(PATH, targetFile, 'build.gradle')
+            with open(gradle_file, 'r') as f:
+                tag_lines = []
+                has_find_tag = False
+                has_find_start_tag = False
+                has_find_end_tag = False
+                bracket_count = 0
                 for line in f.readlines():
                     if line.lstrip().startswith("//"):
-                        taglines.append(line)
+                        tag_lines.append(line)
                         continue
-                    if not hasFindTag:
+                    if not has_find_tag:
                         index = line.find(TAG)
                         if index >= 0:
-                            hasFindTag = True
-                            startIndex = 0
-                            endIndex = len(line)
+                            has_find_tag = True
+                            start_index = 0
+                            end_index = len(line)
                             for index, c in enumerate(line):
                                 if c == '{':
-                                    if not hasFindStartTag:
-                                        hasFindStartTag = True
-                                        startIndex = index + 1
-                                    bracketCount += 1
+                                    if not has_find_start_tag:
+                                        has_find_start_tag = True
+                                        start_index = index + 1
+                                    bracket_count += 1
                                 elif c == '}':
-                                    bracketCount -= 1
-                                if hasFindStartTag and bracketCount == 0:
-                                    hasFindEndTag = True
-                                    endIndex = index
+                                    bracket_count -= 1
+                                if has_find_start_tag and bracket_count == 0:
+                                    has_find_end_tag = True
+                                    end_index = index
                                     break
-                            if hasFindEndTag:
-                                taglines.append(line[0:startIndex] + line[endIndex:len(line)])
+                            if has_find_end_tag:
+                                tag_lines.append(line[0:start_index] + line[end_index:len(line)])
                             else:
-                                if hasFindStartTag:
-                                    taglines.append(line[0:startIndex] + "\n")
+                                if has_find_start_tag:
+                                    tag_lines.append(line[0:start_index] + "\n")
                                 else:
-                                    taglines.append(line)
-                    if hasFindTag and not hasFindEndTag:
-                        startindex = -1
-                        endindex = len(line)
+                                    tag_lines.append(line)
+                    if has_find_tag and not has_find_end_tag:
+                        start_index = -1
+                        end_index = len(line)
                         for index, c in enumerate(line):
                             if c == '{':
-                                if not hasFindStartTag:
-                                    hasFindStartTag = True
-                                    startindex = index + 1
-                                bracketCount += 1
+                                if not has_find_start_tag:
+                                    has_find_start_tag = True
+                                    start_index = index + 1
+                                bracket_count += 1
                             elif c == '}':
-                                bracketCount -= 1
-                            if hasFindStartTag and bracketCount == 0:
-                                hasFindEndTag = True
-                                endindex = index
+                                bracket_count -= 1
+                            if has_find_start_tag and bracket_count == 0:
+                                has_find_end_tag = True
+                                end_index = index
                                 break
-                        if hasFindStartTag:
+                        if has_find_start_tag:
                             linebreak = ""
-                            if startindex >= 0:
+                            if start_index >= 0:
                                 linebreak = "\n"
                             else:
-                                startindex = 0
-                            if hasFindEndTag:
-                                taglines.append(line[0:startindex] + linebreak + "    " + line[endindex:len(line)])
+                                start_index = 0
+                            if has_find_end_tag:
+                                tag_lines.append(line[0:start_index] + linebreak + "    " + line[end_index:len(line)])
                             else:
-                                taglines.append(line[0:startindex] + linebreak)
+                                tag_lines.append(line[0:start_index] + linebreak)
                         else:
-                            taglines.append(line)
-                    if hasFindTag and hasFindEndTag:
-                        taglines.append(line)
-                    if not hasFindTag and not hasFindEndTag:
-                        taglines.append(line)
-                if hasFindTag:
-                    fd = open(gradleFile, "w")
-                    fd.writelines(taglines)
+                            tag_lines.append(line)
+                    if has_find_tag and has_find_end_tag:
+                        tag_lines.append(line)
+                    if not has_find_tag and not has_find_end_tag:
+                        tag_lines.append(line)
+                if has_find_tag:
+                    fd = open(gradle_file, "w")
+                    fd.writelines(tag_lines)
                     fd.close()
 
     def compile(self):
@@ -499,25 +497,28 @@ class Compile:
 
 
 class MockCache:
-    def __init__(self, originAarCachePath, targetMainSrcPath):
-        # 复制文件
-        self.originAarCachePath = originAarCachePath
-        self.targetMainSrcPath = targetMainSrcPath
-        self.mockAarCachePath = originAarCachePath.replace(".aar", "-origin.zip")
-        self.mockAarOriginPath = originAarCachePath.replace(".aar", "-origin.aar")
+    zucker_res_size = 0
 
-    def mockCache(self):
+    def __init__(self, origin_aar_cache_path, target_main_src_path):
+        # 复制文件
+        self.originAarCachePath = origin_aar_cache_path
+        self.targetMainSrcPath = target_main_src_path
+        self.mockAarCachePath = origin_aar_cache_path.replace(".aar", "-origin.zip")
+        self.mockAarOriginPath = origin_aar_cache_path.replace(".aar", "-origin.aar")
+
+    def mock_cache(self):
         copyfile(self.originAarCachePath, self.mockAarCachePath)
         copyfile(self.originAarCachePath, self.mockAarOriginPath)
 
         # 解压
-        unzipFile = os.path.dirname(self.originAarCachePath) + "/" + (os.path.basename(self.originAarCachePath)).replace(".aar","")
+        unzip_file = os.path.dirname(self.originAarCachePath) + "/" + (
+            os.path.basename(self.originAarCachePath)).replace(".aar", "")
         file_zip = zipfile.ZipFile(self.mockAarCachePath, 'r')
         for file in file_zip.namelist():
-            file_zip.extract(file, unzipFile)
+            file_zip.extract(file, unzip_file)
         file_zip.close()
 
-        self._copyMockFile(unzipFile, self.targetMainSrcPath)
+        self._copy_mock_file(unzip_file, self.targetMainSrcPath)
         # 基础Mock
         for root, dirs, files in os.walk(os.path.dirname(self.targetMainSrcPath + "/res"), topdown=False):
             for name in files:
@@ -528,14 +529,14 @@ class MockCache:
                 elif ('layout' in root) and name.endswith('.xml'):
                     mypath = os.path.join(root, name)
                     fd = open(mypath, "w")
-                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                    fd.write("<FrameLayout/>");
+                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
+                    fd.write("<FrameLayout/>")
                     fd.close()
                 elif ('drawable' in root) and name.endswith('.xml'):
                     mypath = os.path.join(root, name)
                     fd = open(mypath, "w")
-                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                    fd.write("<selector/>");
+                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
+                    fd.write("<selector/>")
                     fd.close()
                 elif ('drawable' in root) and name.endswith('.9.png'):
                     pass
@@ -544,20 +545,20 @@ class MockCache:
                 elif ('anim' in root) and name.endswith('.xml'):
                     mypath = os.path.join(root, name)
                     fd = open(mypath, "w")
-                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                    fd.write("<set/>");
+                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
+                    fd.write("<set/>")
                     fd.close()
                 elif ('color' in root) and name.endswith('.xml'):
                     mypath = os.path.join(root, name)
                     fd = open(mypath, "w")
-                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                    fd.write("<selector/>");
+                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
+                    fd.write("<selector/>")
                     fd.close()
                 elif ('xml' in root) and name.endswith('.xml'):
                     mypath = os.path.join(root, name)
                     fd = open(mypath, "w")
-                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
-                    fd.write("<paths/>");
+                    fd.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
+                    fd.write("<paths/>")
                     fd.close()
                 else:
                     mypath = os.path.join(root, name)
@@ -566,11 +567,11 @@ class MockCache:
                     fd.close()
 
         # 遍历文件，并删除  os.path.join(path, file)
-        whiteList = ["classes.jar"]
-        dirs = os.listdir(unzipFile)
-        for root, dirs, files in os.walk(unzipFile, topdown=False):
+        white_list = ["classes.jar"]
+        dirs = os.listdir(unzip_file)
+        for root, dirs, files in os.walk(unzip_file, topdown=False):
             for name in files:
-                if name in whiteList:
+                if name in white_list:
                     pass
                 else:
                     os.remove(os.path.join(root, name))
@@ -581,11 +582,12 @@ class MockCache:
                     os.remove(os.path.join(root, name))
 
         # 计算zucker库里面res的文件大小
-        self.zuckerResSize = self._get_dirsize(os.path.dirname(self.targetMainSrcPath + "/res"))
+        self.zucker_res_size = self._get_dir_size(os.path.dirname(self.targetMainSrcPath + "/res"))
         # 压缩Mock的File
-        self._zipMockFile(unzipFile)
+        self._zip_mock_file(unzip_file)
 
-    def _get_dirsize(self, path):
+    @staticmethod
+    def _get_dir_size(path):
         # 计算指定的路径下的所有文件的大小
         if os.path.isdir(path):
             file_size, dir_list = 0, [path]
@@ -658,14 +660,15 @@ class MockCache:
             raise shutil.Error(errors)
         return dst
 
-    def _copyMockFile(self, originPath, targetMainSrcPath):
-        originPath = originPath + "/res"
-        if os.path.exists(originPath):
-            self._copytree(originPath, targetMainSrcPath + "/res")
-        elif not os.path.exists(targetMainSrcPath + "/res"):
-            os.makedirs(targetMainSrcPath + "/res")
+    def _copy_mock_file(self, origin_path, target_main_src_path):
+        origin_path = origin_path + "/res"
+        if os.path.exists(origin_path):
+            self._copytree(origin_path, target_main_src_path + "/res")
+        elif not os.path.exists(target_main_src_path + "/res"):
+            os.makedirs(target_main_src_path + "/res")
 
-    def _zipMockFile(self, start_dir):
+    @staticmethod
+    def _zip_mock_file(start_dir):
         start_dir = start_dir
         file_news = start_dir + '.aar'
 
@@ -678,41 +681,42 @@ class MockCache:
         z.close()
         return file_news
 
-    def addConfigurations(self, aar, outputProjectPath, appdir):
+    @staticmethod
+    def add_configurations(aar, output_project_path, app_dir):
         aars = aar.split(":")
         name = aars[1] + "-" + aars[2]
-        subpath = os.path.join(outputProjectPath, appdir)
+        sub_path = os.path.join(output_project_path, app_dir)
 
-        buildGradle = subpath + "/build.gradle";
-        if os.path.exists(buildGradle):
+        build_gradle = sub_path + "/build.gradle"
+        if os.path.exists(build_gradle):
             # 先读文件
-            configurations = open(buildGradle, 'r')
-            content = configurations.read();
+            configurations = open(build_gradle, 'r')
+            content = configurations.read()
             post = content.find("configurations {")
-            # all*.exclude group: 'com.wuba.wuxian.sdk', module: 'support-v4'
             if post != -1:
-                configurations = open(buildGradle, 'w');
+                configurations = open(build_gradle, 'w')
                 content = content[:post + len("configurations {")] + "\n" + "all*.exclude group: \'" + aars[
                     0] + "\'" + " ,module: " + "\'" + aars[1] + "\'\n" + content[post + len("configurations {"):]
                 configurations.write(content)
             else:
-                configurations = open(buildGradle, 'a+');
-                configurations.write("configurations {");
-                configurations.write("\n");
-                configurations.write("all*.exclude group: \'" + aars[0] + "\'" + " ,module: " + "\'" + aars[1] + "\'");
-                configurations.write("\n");
-                configurations.write("}");
-            configurations.close();
+                configurations = open(build_gradle, 'a+')
+                configurations.write("configurations {")
+                configurations.write("\n")
+                configurations.write("all*.exclude group: \'" + aars[0] + "\'" + " ,module: " + "\'" + aars[1] + "\'")
+                configurations.write("\n")
+                configurations.write("}")
+            configurations.close()
+
 
 class RevertCache:
     # 回滚修改的Cache目标AAR
-    def __init__(self, originAarCachePath):
-        self.originAarCachePath = originAarCachePath
+    def __init__(self, origin_aar_cache_path):
+        self.originAarCachePath = origin_aar_cache_path
 
     def revert(self):
-        fileName = os.path.dirname(self.originAarCachePath)
-        dirs = os.listdir(fileName)
-        for root, dirs, files in os.walk(fileName, topdown=False):
+        file_name = os.path.dirname(self.originAarCachePath)
+        dirs = os.listdir(file_name)
+        for root, dirs, files in os.walk(file_name, topdown=False):
             for name in files:
                 if name.endswith("-origin.aar"):
                     pass
@@ -721,33 +725,35 @@ class RevertCache:
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
 
-        for root, dirs, files in os.walk(fileName, topdown=False):
+        for root, dirs, files in os.walk(file_name, topdown=False):
             for name in files:
                 if name.endswith("-origin.aar"):
                     new_name = copy.deepcopy(name)
                     new_name = new_name.replace("-origin.aar", ".aar")
                     os.rename(root + "/" + name, root + "/" + new_name)
 
+
 class PackageSize:
     # 统计大小，并输出最终结果
-    def getresult(self, baseOutputProjectPath, aarOutputProjectPath, appdir, zuckerResSize):
-        basePackSize = 0
-        aarPackSize = 0
-        basePackSizePath = os.path.join(baseOutputProjectPath, appdir, "zucker.txt")
-        aarPackSizePath = os.path.join(aarOutputProjectPath, appdir, "zucker.txt")
-        with open(basePackSizePath) as f:
+    @staticmethod
+    def get_result(base_output_project_path, aar_output_project_path, app_dir, zucker_res_size):
+        base_pack_size = 0
+        aar_pack_size = 0
+        base_pack_size_path = os.path.join(base_output_project_path, app_dir, "zucker.txt")
+        aar_pack_size_path = os.path.join(aar_output_project_path, app_dir, "zucker.txt")
+        with open(base_pack_size_path) as f:
             for line in f.readlines():
-                basePackSize = line
+                base_pack_size = line
                 print("基础包大小(basePackSize,单位Byte): " + line)
                 break
-        with open(aarPackSizePath) as f:
+        with open(aar_pack_size_path) as f:
             for line in f.readlines():
-                aarPackSize = line
-                aarPackSize = int(aarPackSize) - (int(zuckerResSize)*2)
-                print("替换后的APK大小(aarPackSize,单位Byte): " + str(aarPackSize))
+                aar_pack_size = line
+                aar_pack_size = int(aar_pack_size) - (int(zucker_res_size) * 2)
+                print("替换后的APK大小(aarPackSize,单位Byte): " + str(aar_pack_size))
                 break
-        aarSize = int(basePackSize) - int(aarPackSize)
-        print("AAR大小(aarSize,单位Byte): " + str(aarSize))
+        aar_size = int(base_pack_size) - int(aar_pack_size)
+        print("AAR大小(aarSize,单位Byte): " + str(aar_size))
 
 
 if __name__ == '__main__':
@@ -773,11 +779,11 @@ if __name__ == '__main__':
         print("cloneBaseProject DONE")
         # 编译工程
         baseCompile = Compile(baseOutputProjectPath)
-        baseAppDirs = baseCompile.findappdirs()
+        baseAppDirs = baseCompile.find_app_dirs()
         print("findBaseAppDirs DONE")
-        baseCompile.clearflavors(baseAppDirs)
+        baseCompile.clear_flavors(baseAppDirs)
         print("clearBaseFlavors DONE")
-        baseCompile.insertscript(baseAppDirs)
+        baseCompile.insert_script(baseAppDirs)
         print("insertBaseScript DONE")
         baseCompile.compile()
 
@@ -793,36 +799,36 @@ if __name__ == '__main__':
     print("cloneAARProject DONE")
     # 编译工程
     compile = Compile(outputProjectPath)
-    appDirs = compile.findappdirs()
+    appDirs = compile.find_app_dirs()
     print("findAARAppDirs DONE")
-    zuckerModuleMainDir = compile.newmodule(appDirs)
+    zuckerModuleMainDir = compile.new_module(appDirs)
     print("newModule DONE: " + zuckerModuleMainDir)
-    compile.clearflavors(appDirs)
+    compile.clear_flavors(appDirs)
     print("clearAARFlavors DONE")
-    compile.insertscript(appDirs)
+    compile.insert_script(appDirs)
     print("insertAARScript DONE")
 
     # 遍历工程下依赖的所有AAR
     for appdir in appDirs:
         dependency = Dependency(outputProjectPath, appdir)
-        aars = dependency.gettoplevelaars()
+        aars = dependency.get_top_level_aars()
         for aar in aars:
             print(aar)
-        targetaar = input("输入AAR名称及版本，格式xxx.xxx:xxx:xxx:")
-        resultaars = dependency.getInputAAR(targetaar)
+        target_aar = input("输入AAR名称及版本，格式xxx.xxx:xxx:xxx:")
+        result_aars = dependency.get_input_aar(target_aar)
         print("输出AAR:")
-        print(resultaars)
+        print(result_aars)
 
         targetAarArray = []
-        for aar in resultaars:
-            aarcache = AarCache()
-            if aarcache.getAARFile(aar):
-                print(aarcache.targetAarPath)
-                mockCache = MockCache(aarcache.targetAarPath, zuckerModuleMainDir)
-                mockCache.mockCache()
-                mockCache.addConfigurations(aar, outputProjectPath, appdir)
-                zuckerResSize = mockCache.zuckerResSize
-                targetAarArray.append(aarcache.targetAarPath)
+        for aar in result_aars:
+            aar_cache = AarCache()
+            if aar_cache.get_aar_file(aar):
+                print(aar_cache.targetAarPath)
+                mockCache = MockCache(aar_cache.targetAarPath, zuckerModuleMainDir)
+                mockCache.mock_cache()
+                mockCache.add_configurations(aar, outputProjectPath, appdir)
+                zuckerResSize = mockCache.zucker_res_size
+                targetAarArray.append(aar_cache.targetAarPath)
                 isCacheExist = True
             else:
                 isCacheExist = False
@@ -838,7 +844,7 @@ if __name__ == '__main__':
 
             # 统计大小并输出
             packSize = PackageSize()
-            packSize.getresult(baseOutputProjectPath, compile.outputProjectPath, appdir, zuckerResSize)
+            packSize.get_result(baseOutputProjectPath, compile.outputProjectPath, appdir, zuckerResSize)
         else:
             print("缓存aar未找到，请重新尝试")
         # break
