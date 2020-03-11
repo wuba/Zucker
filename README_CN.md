@@ -1,4 +1,7 @@
-# Zucker：一个简单无侵害计算AAR独有大小的工具
+# Android APP模块化大小自动分析统计工具-Zucker
+
+基于APP模块的，一个简单无侵害计算AAR独有大小的工具（An easier way to automatically calculate the size of AAR in apk based on APP module）
+
 [英文文档](README_EN.md)
 
 > AAR独立大小和被引入到工程后打包后占用的大小是不一样的，这个有经验的开发者都应该了解。AAR独立大小一目了然，但是怎么计算AAR在APK中的独立占有大小（独有大小）呢？Zucker就此开源给出了一份答案。
