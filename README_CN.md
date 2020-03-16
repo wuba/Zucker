@@ -40,7 +40,18 @@
 
 最后经过打包后，AAR大小就会显示在终端上。
 
-![AAR测量结果](./imgs/sample_aar_size.png)
+```
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 6.0.
+Use f--warning-mode all1 to show the individual deprecation warnings.
+See https://docs.gradle.org/5.4.l/userguide/command_line_interface.html#sec:comm ancLline一warnings
+
+BUILD SUCCESSFUL in 9s
+137 actionable tasks: 133 executed, 4 up-to-date
+compile DONE
+basePackSize: 2908419
+aarPackSize: 2873610
+aarSize: 34809
+```
 
 > 建议先在本项目的`sample工程`进行测试，具体流程见工程[README](Sample/README.md)
 
