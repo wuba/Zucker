@@ -32,7 +32,22 @@
 ./gradlew build
 
 ```
-![配置初始化](./imgs/sample_clone.png)
+```
+-> 〜python3 /Users/iann/EnterpriseProject/Zucker/src/zucker.py /Users/iann/EnterpriseProject/Zucker/Sample
+cloneBaseProject DONE
+findBaseAppDirs DONE
+clearBaseFlavors DONE
+insertBaseScript DONE
+
+> Configure project :app
+WARNING: API 'variantOutput.getPackageApplication()' is obsolete and has been re placed with 'variant.getPackageApplicationProvider()'.
+It will be removed at the end of 2019.
+For more information, see https://d.android.com/r/tools/task-configuration-avoid ance.
+To determine what is calling variantOutput.getPackageApplication(), use -Pandroi d.debug.obsoleteApi=true on the command line to display more information.
+
+BUILD SUCCESSFUL in 2s
+5 actionable tasks: 4 executed, 1 up-to-date
+```
 
 脚本会自动执行，获取项目中的依赖关系并输出一级节点，可以选择目标节点进行AAR大小计算。
 
