@@ -36,7 +36,18 @@
 
 脚本会自动执行，获取项目中的依赖关系并输出一级节点，可以选择目标节点进行AAR大小计算。
 
-![AAR列表](./imgs/sample_aar.png)
+```
+['app', 'app2'] 
+com.github.moduth:blockcanary-android:1.2.1
+com.squareup.okhttp3:okhttp:4.2.1
+com.airbnb.android:lottie:2.5.6
+输入AAR名称及版本，格式xxx.xxx:xxx:xxx:com.github.moduth:blockcanary-android:1.2.1
+输出AAR------
+['com.github.moduth:blockcanary-android:1.2.1', 'com.github.moduth:blockcanary-core:1.2.1']
+/Users/iann/.gradle/caches/modules-2/files-2.1/com.github.moduth/blockcanary-android/1.2.l/78f65b7622338d512e79a26fe76e7bb9f7614190/blockcanary-android-l.2.1.aar
+/Users/iann/.gradle/caches/modules-2/files-2.1/com.github.moduth/blockcanary-android/1.2.l/78f65b7622338d512e79a26fe76e7bb9f7614190/blockcanary-android-l.2.1.aar
+替换 build.gradle
+```
 
 最后经过打包后，AAR大小就会显示在终端上。
 
