@@ -27,15 +27,15 @@ Execute the following command in the terminal:
 ```
 python3 xxx/zucker.py xxx/targetProjectName(Android project)
 ```
-![execute_python_command](./imgs/sample_clone.png)
+![execute_python_command](imgs/sample_clone.png)
 
 The script is executed automatically, obtaining the dependencies in the project and outputing a level-level node, which can select the target node for AAR size calculation.
 
-![dependency_aar_list](./imgs/sample_aar.png)
+![dependency_aar_list](imgs/sample_aar.png)
 
 Finally, after packaging, the AAR size is displayed on the terminal.
 
-![mock_aar_size](./imgs/sample_aar_size.png)
+![mock_aar_size](imgs/sample_aar_size.png)
 
 > It is recommended to test the project's 'sample project' first, as detailed in the project [README](Sample/README.md)
 

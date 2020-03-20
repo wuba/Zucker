@@ -8,10 +8,10 @@
 
 
 ### 执行脚本
-![](../imgs/s1.png)
+![](imgs/s1.png)
 
 ### 选择要计算的AAR
-![](../imgs/s3.png)
+![](imgs/s3.png)
 
 ### 计算结果
-![](../imgs/s4.png)
+![](imgs/s4.png)
