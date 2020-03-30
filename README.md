@@ -83,6 +83,15 @@ aarSize: 34809
 
 > 建议先在本项目的`sample工程`进行测试，具体流程见工程[README](Sample/README.md)
 
+## 联系我们
+
+ -  想了解更多开源项目信息？
+ -  与项目成员零距离交流？
+ -  扫码加小秘书微信
+ -  一切应有尽有
+![jishu-58](docs/imgs/zucker_contact.png)
+ -  微信号 : jishu-58
+ -  添加小秘书微信后由小秘书拉您进项目交流群
 
 ## 常见问题处理
  -  暂不支持工程依赖类型的测量 `implementation project(':xxx')` 
